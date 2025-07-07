@@ -6,8 +6,10 @@
 1. Go to [Vercel](https://vercel.com)
 2. Import your Creator Hub project from GitHub
 3. Set the **Root Directory** to: `Creator Hub`
-4. Add Environment Variables:
-   - `NEXT_PUBLIC_GOOGLE_GEMINI_API_KEY` = `AIzaSyAOnPkSGxDTW79dZYZM98eOIQEbyNGs894`
+4. Add Environment Variables in Vercel Dashboard:
+   - Key: `NEXT_PUBLIC_GOOGLE_GEMINI_API_KEY`
+   - Value: `AIzaSyAOnPkSGxDTW79dZYZM98eOIQEbyNGs894`
+   - Environment: All (Production, Preview, Development)
 5. Deploy the project
 
 ### 2. **Update Main Dashboard**

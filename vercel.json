@@ -3,8 +3,5 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
-  "devCommand": "npm run dev",
-  "env": {
-    "NEXT_PUBLIC_GOOGLE_GEMINI_API_KEY": "@google-gemini-api-key"
-  }
+  "devCommand": "npm run dev"
 }
