@@ -1,4 +1,6 @@
 
+"use client"
+
 import Templates from '@/app/(data)/Templates'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
