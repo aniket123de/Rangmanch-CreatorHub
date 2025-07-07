@@ -1,6 +1,5 @@
 "use client"
 import React from 'react'
-import Header from './_components/Header';
 
 function layout({
     children,
@@ -11,7 +10,6 @@ function layout({
   return (
     <div className='bg-slate-100 min-h-screen'>
         <div>
-          <Header/>
         {children}
         </div>
       <div>
