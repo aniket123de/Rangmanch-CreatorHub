@@ -113,8 +113,20 @@ function OutputSection({aiOutput}:props) {
     let result = '';
     let inList = false;
     let inNumList = false;
+    const formattingLabels = [
+      /^bold:?$/i,
+      /^italics:?$/i,
+      /^underline:?$/i,
+      /^hyperlink:?$/i,
+      /^list:?$/i,
+      /^numbered list:?$/i,
+      /^heading \d:?$/i,
+      /^heading:?$/i
+    ];
     lines.forEach((line, idx) => {
       const trimmed = line.trim();
+      // Skip formatting label lines
+      if (formattingLabels.some(re => re.test(trimmed))) return;
       // Numbered list
       if (/^\d+\./.test(trimmed)) {
         if (!inNumList) {
