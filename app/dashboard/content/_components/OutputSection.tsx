@@ -108,6 +108,10 @@ function OutputSection({aiOutput}:props) {
     // Handle links [text](url)
     html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-sky-400 underline" target="_blank">$1</a>');
 
+    // Add custom classes to headings for size, bold, and underline
+    html = html.replace(/<h2>(.*?)<\/h2>/g, '<h2 class="text-2xl font-extrabold underline mb-4 mt-8">$1</h2>');
+    html = html.replace(/<h3>(.*?)<\/h3>/g, '<h3 class="text-xl font-bold underline mb-3 mt-6">$1</h3>');
+
     // Split into lines for further processing
     const lines = html.split(/\r?\n/);
     let result = '';
