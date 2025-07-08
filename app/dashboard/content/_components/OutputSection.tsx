@@ -1,11 +1,7 @@
 "use client"
 import React, { useEffect, useState } from 'react'
-import dynamic from 'next/dynamic';
 import { Copy, Terminal, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-// Dynamically import the markdown editor to avoid SSR issues
-const MDEditor = dynamic(() => import('@uiw/react-md-editor'), { ssr: false });
 
 interface props{
   aiOutput:string;
@@ -15,15 +11,85 @@ function OutputSection({aiOutput}:props) {
   const [value, setValue] = useState<string>('Your result will appear here');
   const [copied, setCopied] = useState(false);
 
+  // Function to parse RTF and extract readable text with formatting
+  const parseRTF = (rtfText: string): string => {
+    if (!rtfText) return 'Your result will appear here';
+    
+    // If it's not RTF format, return as is but try to format it
+    if (!rtfText.includes('\\rtf1')) {
+      return formatPlainText(rtfText);
+    }
+    
+    // Remove RTF control codes and extract readable text
+    let text = rtfText
+      // Remove RTF header
+      .replace(/\\rtf1[^}]*}/g, '')
+      // Remove font table
+      .replace(/\\fonttbl[^}]*}/g, '')
+      // Remove color table
+      .replace(/\\colortbl[^}]*}/g, '')
+      // Remove viewkind and other format codes
+      .replace(/\\viewkind\d+\\uc\d+\\pard[^\\]*/g, '\n')
+      // Handle paragraph breaks
+      .replace(/\\par\s*/g, '\n\n')
+      // Handle line breaks
+      .replace(/\\line\s*/g, '\n')
+      // Handle bullets
+      .replace(/\\bullet\s*/g, '• ')
+      // Handle tabs (convert to spaces for better formatting)
+      .replace(/\\tab\s*/g, '    ')
+      // Remove font formatting but preserve structure
+      .replace(/\\f\d+/g, '')
+      .replace(/\\fs\d+/g, '')
+      .replace(/\\b\d*/g, '') // bold
+      .replace(/\\i\d*/g, '') // italic
+      .replace(/\\ul\d*/g, '') // underline
+      // Remove other formatting codes
+      .replace(/\\[a-zA-Z]+\d*\s*/g, ' ')
+      // Clean up braces
+      .replace(/[{}]/g, '')
+      .trim();
+    
+    return formatPlainText(text);
+  };
+
+  // Function to format plain text content
+  const formatPlainText = (text: string): string => {
+    return text
+      // Handle bullet points marked with asterisk or bullet
+      .replace(/\s*\*\s+/g, '\n• ')
+      .replace(/\s*•\s*/g, '\n• ')
+      // Format numbered lists with "d I.", "d II." pattern
+      .replace(/\s*d\s+([IVX]+)\.\s*/g, '\n$1. ')
+      // Format regular numbered lists
+      .replace(/\s*(\d+\.)\s*/g, '\n$1 ')
+      // Format Roman numerals
+      .replace(/\s*([IVX]+\.)\s*/g, '\n$1 ')
+      // Format lettered lists
+      .replace(/\s*([a-z]\.)\s*/g, '\n$1 ')
+      // Format "Outline:" patterns specifically
+      .replace(/\s*\*\s*Outline:\s*/gi, '\n\nOutline:\n')
+      // Format section titles that end with asterisks
+      .replace(/\*\*([^*]+)\*\*/g, '\n\n$1\n')
+      // Clean up multiple spaces
+      .replace(/\s+/g, ' ')
+      // Clean up multiple newlines but preserve intentional breaks
+      .replace(/\n{3,}/g, '\n\n')
+      // Clean up leading/trailing whitespace
+      .trim();
+  };
+
   useEffect(() => {
     if (aiOutput) {
-      setValue(aiOutput);
+      const parsedOutput = parseRTF(aiOutput);
+      setValue(parsedOutput);
     }
   }, [aiOutput]);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(aiOutput || value);
+      const textToCopy = parseRTF(aiOutput) || value;
+      await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -80,28 +146,76 @@ function OutputSection({aiOutput}:props) {
             </div>
           </div>
           <div className='p-2 sm:p-4'>
-            <MDEditor
-              value={value}
-              onChange={(val?: string) => setValue(val || '')}
-              height={400}
-              preview="edit"
-              hideToolbar={true}
-              visibleDragbar={false}
-              data-color-mode="dark"
-              className="!bg-black !border-none"
-              textareaProps={{
-                placeholder: 'Your AI-generated content will appear here...',
-                style: {
-                  fontSize: '12px',
-                  lineHeight: '1.6',
-                  fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
-                  backgroundColor: '#000000',
-                  color: '#e5e7eb',
-                  border: 'none',
-                  outline: 'none',
-                },
-              }}
-            />
+            <div className='bg-gray-900 rounded-lg border border-gray-700 min-h-[400px] p-4'>
+              <div className='text-gray-300 text-sm leading-7 whitespace-pre-wrap overflow-auto max-h-[400px] font-sans'>
+                {value.split('\n').map((line, index) => {
+                  const trimmedLine = line.trim();
+                  
+                  // Handle different line types for better formatting
+                  if (trimmedLine.startsWith('•')) {
+                    return (
+                      <div key={index} className='ml-4 mb-2 flex items-start'>
+                        <span className='text-blue-400 mr-3 mt-1 text-base'>•</span>
+                        <span className='flex-1 text-gray-300'>{trimmedLine.substring(1).trim()}</span>
+                      </div>
+                    );
+                  } else if (trimmedLine.match(/^[IVX]+\./)) {
+                    // Roman numerals
+                    return (
+                      <div key={index} className='ml-4 mb-2 flex items-start'>
+                        <span className='text-purple-400 mr-3 font-semibold min-w-[2rem]'>
+                          {trimmedLine.match(/^[IVX]+\./)?.[0]}
+                        </span>
+                        <span className='flex-1 text-gray-300'>{trimmedLine.replace(/^[IVX]+\.\s*/, '')}</span>
+                      </div>
+                    );
+                  } else if (trimmedLine.match(/^\d+\./)) {
+                    // Regular numbers
+                    return (
+                      <div key={index} className='ml-4 mb-2 flex items-start'>
+                        <span className='text-green-400 mr-3 font-semibold min-w-[2rem]'>
+                          {trimmedLine.match(/^\d+\./)?.[0]}
+                        </span>
+                        <span className='flex-1 text-gray-300'>{trimmedLine.replace(/^\d+\.\s*/, '')}</span>
+                      </div>
+                    );
+                  } else if (trimmedLine.match(/^[a-z]\./)) {
+                    // Lettered lists
+                    return (
+                      <div key={index} className='ml-6 mb-1 flex items-start'>
+                        <span className='text-cyan-400 mr-2 font-medium'>
+                          {trimmedLine.match(/^[a-z]\./)?.[0]}
+                        </span>
+                        <span className='flex-1 text-gray-300'>{trimmedLine.replace(/^[a-z]\.\s*/, '')}</span>
+                      </div>
+                    );
+                  } else if (trimmedLine === 'Outline:') {
+                    // Special handling for standalone "Outline:" lines
+                    return (
+                      <div key={index} className='text-orange-400 font-semibold mb-3 mt-4 text-base'>
+                        {trimmedLine}
+                      </div>
+                    );
+                  } else if (trimmedLine.endsWith(':') && trimmedLine.length > 0 && trimmedLine.length < 30 && !trimmedLine.includes('*') && !trimmedLine.includes('the') && !trimmedLine.includes('and') && !trimmedLine.includes('of') && !trimmedLine.includes('in') && !trimmedLine.includes('to')) {
+                    // Headers/Titles (but not lines with asterisks or common words that indicate sentences)
+                    return (
+                      <div key={index} className='text-yellow-400 font-semibold mb-2 mt-4 text-base'>
+                        {trimmedLine}
+                      </div>
+                    );
+                  } else if (trimmedLine === '') {
+                    return <div key={index} className='h-2'></div>;
+                  } else {
+                    // Regular paragraphs - default gray text
+                    return (
+                      <div key={index} className='mb-3 text-gray-300 leading-6'>
+                        {trimmedLine}
+                      </div>
+                    );
+                  }
+                })}
+              </div>
+            </div>
           </div>
         </div>
       </div>
