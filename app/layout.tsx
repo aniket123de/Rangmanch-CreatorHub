@@ -7,6 +7,11 @@ const inter = Outfit({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "CreatorAI",
   description: "AI Content Generator",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({
