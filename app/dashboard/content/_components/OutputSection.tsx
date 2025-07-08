@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState } from 'react'
-import { Copy, Terminal, CheckCircle } from 'lucide-react';
+import { Copy, Terminal, CheckCircle, ArrowUpRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface props{
@@ -10,16 +10,15 @@ interface props{
 function OutputSection({aiOutput}:props) {
   const [value, setValue] = useState<string>('Your result will appear here');
   const [copied, setCopied] = useState(false);
+  const [enlarged, setEnlarged] = useState(false);
 
   // Function to parse RTF and extract readable text with formatting
   const parseRTF = (rtfText: string): string => {
     if (!rtfText) return 'Your result will appear here';
-    
     // If it's not RTF format, return as is but try to format it
     if (!rtfText.includes('\\rtf1')) {
       return formatPlainText(rtfText);
     }
-    
     // Remove RTF control codes and extract readable text
     let text = rtfText
       // Remove RTF header
@@ -49,7 +48,6 @@ function OutputSection({aiOutput}:props) {
       // Clean up braces
       .replace(/[{}]/g, '')
       .trim();
-    
     return formatPlainText(text);
   };
 
@@ -77,6 +75,99 @@ function OutputSection({aiOutput}:props) {
       .replace(/\n{3,}/g, '\n\n')
       // Clean up leading/trailing whitespace
       .trim();
+  };
+
+  // Improved parser for AI/RTF/Markdown output to clean HTML
+  const blogStyleParser = (text: string): string => {
+    if (!text) return '';
+    let html = text;
+
+    // Highlight important keywords
+    const importantWords = [
+      'Delhi', 'Paradise', 'Adventure', 'Must-See', 'Unforgettable', 'Unique', 'Experience', 'Tranquility', 'Vibrant', 'Breathtaking', 'Serene', 'Cultural', 'Scenery', 'Houseboats', 'Dal Lake', 'Gardens', 'Cuisine', 'Spiritual', 'Jewel', 'Floating', 'Mountains', 'Valleys', 'Lakes', 'Tulips', 'Spring', 'Winter', 'Snow', 'Warmth', 'Hospitality', 'Heritage', 'Tradition', 'Festival', 'Market', 'Handicraft', 'Shikara', 'Bloom', 'Colors', 'Temple', 'Shrine', 'Mosque', 'Skiing', 'Trekking', 'Paragliding', 'Nature', 'Beauty', 'Peace', 'Heaven', 'Heaven on Earth', 'Red Fort', 'Qutub Minar', 'Humayun', 'India Gate', 'Chandni Chowk', 'Jama Masjid', 'Spice Market', 'Rashtrapati Bhavan', 'Parliament House', 'Connaught Place', 'Lodhi Garden', 'Butter Chicken', 'Biryani', 'Kebabs', 'Street Food'
+    ];
+    importantWords.forEach(word => {
+      const regex = new RegExp(`(\\b${word}\\b)`, 'gi');
+      html = html.replace(regex, '<span class="text-sky-400 font-semibold">$1</span>');
+    });
+
+    // Remove RTF/markdown artifacts
+    html = html.replace(/---+/g, ''); // Remove horizontal rules
+    html = html.replace(/\\rtf1[\s\S]*?}/g, ''); // Remove RTF header
+    html = html.replace(/\*\(Concluding Paragraph\)\*/gi, '<h2>Concluding Paragraph</h2>');
+    html = html.replace(/\*\(Introductory Paragraph\)\*/gi, '<h2>Introductory Paragraph</h2>');
+    html = html.replace(/\*\(Heading \d+: ([^*)]+)\)\*/g, '<h2>$1</h2>');
+    html = html.replace(/\*Title: ([^*]+)\*/g, '<h2>$1</h2>');
+    html = html.replace(/\*Must-See Historical Landmarks\)\*/gi, '<h2>Must-See Historical Landmarks</h2>');
+    html = html.replace(/\*([A-Za-z0-9 ,\-:'()]+)\)\*/g, '<h2>$1</h2>');
+    html = html.replace(/\*([A-Za-z0-9 ,\-:'()]+):\*/g, '<h3>$1</h3>');
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<b class="text-pink-400 font-bold">$1</b>');
+    html = html.replace(/\*([^*]+)\*/g, '<i class="text-amber-300">$1</i>');
+    html = html.replace(/_([^_]+)_/g, '<i class="text-amber-300">$1</i>');
+
+    // Handle links [text](url)
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-sky-400 underline" target="_blank">$1</a>');
+
+    // Split into lines for further processing
+    const lines = html.split(/\r?\n/);
+    let result = '';
+    let inList = false;
+    let inNumList = false;
+    lines.forEach((line, idx) => {
+      const trimmed = line.trim();
+      // Numbered list
+      if (/^\d+\./.test(trimmed)) {
+        if (!inNumList) {
+          result += '<ol class="mb-6 mt-2 list-decimal list-inside">';
+          inNumList = true;
+        }
+        result += `<li>${trimmed.replace(/^\d+\.\s*/, '')}</li>`;
+      } else if (/^[•\-]\s?/.test(trimmed)) {
+        // Bullet list
+        if (!inList) {
+          result += '<ul class="mb-6 mt-2 list-disc list-inside">';
+          inList = true;
+        }
+        result += `<li>${trimmed.replace(/^[•\-]\s?/, '')}</li>`;
+      } else if (trimmed.length === 0) {
+        // Empty line: close lists if open
+        if (inList) {
+          result += '</ul>';
+          inList = false;
+        }
+        if (inNumList) {
+          result += '</ol>';
+          inNumList = false;
+        }
+      } else if (/<h2>|<h3>/.test(trimmed)) {
+        // Heading: close lists if open
+        if (inList) {
+          result += '</ul>';
+          inList = false;
+        }
+        if (inNumList) {
+          result += '</ol>';
+          inNumList = false;
+        }
+        result += trimmed;
+      } else {
+        // Paragraph: close lists if open, then wrap in <p>
+        if (inList) {
+          result += '</ul>';
+          inList = false;
+        }
+        if (inNumList) {
+          result += '</ol>';
+          inNumList = false;
+        }
+        result += `<p class="mb-6">${trimmed}</p>`;
+      }
+    });
+    if (inList) result += '</ul>';
+    if (inNumList) result += '</ol>';
+    // Remove empty <p></p>
+    result = result.replace(/<p class="mb-6">\s*<\/p>/g, '');
+    return result;
   };
 
   useEffect(() => {
@@ -138,89 +229,76 @@ function OutputSection({aiOutput}:props) {
       
       {/* Terminal Content */}
       <div className='bg-gray-900 p-2 sm:p-4 md:p-6'>
-        <div className='bg-black rounded-lg border border-gray-700 overflow-hidden'>
-          <div className='bg-gray-800 px-2 sm:px-4 py-2 border-b border-gray-700'>
+        <div className='bg-black rounded-lg border border-gray-700 overflow-hidden relative'>
+          <div className='bg-gray-800 px-2 sm:px-4 py-2 border-b border-gray-700 flex items-center justify-between'>
             <div className='flex items-center gap-2'>
               <div className='w-2 h-2 bg-green-400 rounded-full animate-pulse'></div>
-              <span className='font-mono text-xs text-gray-400'>output.md</span>
+              <span className='font-mono text-xs text-gray-400'>output</span>
             </div>
+            <button
+              className="p-1 hover:bg-gray-700 rounded transition absolute right-2 top-2 sm:static"
+              title="Enlarge"
+              onClick={() => setEnlarged(true)}
+            >
+              <ArrowUpRight className="w-5 h-5 text-gray-400" />
+            </button>
           </div>
           <div className='p-2 sm:p-4'>
             <div className='bg-gray-900 rounded-lg border border-gray-700 min-h-[400px] p-4'>
-              <div className='text-gray-300 text-sm leading-7 whitespace-pre-wrap overflow-auto max-h-[400px] font-sans'>
-                {value.split('\n').map((line, index) => {
-                  const trimmedLine = line.trim();
-                  
-                  // Handle different line types for better formatting
-                  if (trimmedLine.startsWith('•')) {
-                    return (
-                      <div key={index} className='ml-4 mb-2 flex items-start'>
-                        <span className='text-blue-400 mr-3 mt-1 text-base'>•</span>
-                        <span className='flex-1 text-gray-300'>{trimmedLine.substring(1).trim()}</span>
-                      </div>
-                    );
-                  } else if (trimmedLine.match(/^[IVX]+\./)) {
-                    // Roman numerals
-                    return (
-                      <div key={index} className='ml-4 mb-2 flex items-start'>
-                        <span className='text-purple-400 mr-3 font-semibold min-w-[2rem]'>
-                          {trimmedLine.match(/^[IVX]+\./)?.[0]}
-                        </span>
-                        <span className='flex-1 text-gray-300'>{trimmedLine.replace(/^[IVX]+\.\s*/, '')}</span>
-                      </div>
-                    );
-                  } else if (trimmedLine.match(/^\d+\./)) {
-                    // Regular numbers
-                    return (
-                      <div key={index} className='ml-4 mb-2 flex items-start'>
-                        <span className='text-green-400 mr-3 font-semibold min-w-[2rem]'>
-                          {trimmedLine.match(/^\d+\./)?.[0]}
-                        </span>
-                        <span className='flex-1 text-gray-300'>{trimmedLine.replace(/^\d+\.\s*/, '')}</span>
-                      </div>
-                    );
-                  } else if (trimmedLine.match(/^[a-z]\./)) {
-                    // Lettered lists
-                    return (
-                      <div key={index} className='ml-6 mb-1 flex items-start'>
-                        <span className='text-cyan-400 mr-2 font-medium'>
-                          {trimmedLine.match(/^[a-z]\./)?.[0]}
-                        </span>
-                        <span className='flex-1 text-gray-300'>{trimmedLine.replace(/^[a-z]\.\s*/, '')}</span>
-                      </div>
-                    );
-                  } else if (trimmedLine === 'Outline:') {
-                    // Special handling for standalone "Outline:" lines
-                    return (
-                      <div key={index} className='text-orange-400 font-semibold mb-3 mt-4 text-base'>
-                        {trimmedLine}
-                      </div>
-                    );
-                  } else if (trimmedLine.endsWith(':') && trimmedLine.length > 0 && trimmedLine.length < 30 && !trimmedLine.includes('*') && !trimmedLine.includes('the') && !trimmedLine.includes('and') && !trimmedLine.includes('of') && !trimmedLine.includes('in') && !trimmedLine.includes('to')) {
-                    // Headers/Titles (but not lines with asterisks or common words that indicate sentences)
-                    return (
-                      <div key={index} className='text-yellow-400 font-semibold mb-2 mt-4 text-base'>
-                        {trimmedLine}
-                      </div>
-                    );
-                  } else if (trimmedLine === '') {
-                    return <div key={index} className='h-2'></div>;
-                  } else {
-                    // Regular paragraphs - default gray text
-                    return (
-                      <div key={index} className='mb-3 text-gray-300 leading-6'>
-                        {trimmedLine}
-                      </div>
-                    );
-                  }
-                })}
-              </div>
+              {/* Render HTML if output looks like HTML, else prettified text */}
+              {aiOutput.trim().startsWith('<') ? (
+                <div
+                  className='prose prose-invert max-w-none text-gray-100 text-base leading-8 overflow-auto max-h-[400px] font-sans'
+                  style={{paddingBottom: '0.5rem'}}
+                  dangerouslySetInnerHTML={{ __html: aiOutput }}
+                />
+              ) : (
+                <div
+                  className='prose prose-invert max-w-none text-gray-100 text-base leading-8 overflow-auto max-h-[400px] font-sans'
+                  style={{paddingBottom: '0.5rem'}}
+                  dangerouslySetInnerHTML={{ __html: blogStyleParser(value) }}
+                />
+              )}
             </div>
           </div>
         </div>
+        {/* Enlarged Modal Overlay */}
+        {enlarged && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
+            <div className="relative w-full max-w-5xl h-[90vh] bg-gray-900 rounded-lg border border-gray-700 shadow-2xl flex flex-col">
+              <button
+                className="absolute top-4 right-4 p-2 bg-gray-800 rounded-full hover:bg-gray-700 z-10"
+                title="Close"
+                onClick={() => setEnlarged(false)}
+              >
+                <X className="w-6 h-6 text-gray-300" />
+              </button>
+              <div className="flex-1 overflow-auto p-8">
+                {aiOutput.trim().startsWith('<') ? (
+                  <div
+                    className='prose prose-invert max-w-none text-gray-100 text-lg leading-8 font-sans'
+                    dangerouslySetInnerHTML={{ __html: aiOutput }}
+                  />
+                ) : (
+                  <div
+                    className='prose prose-invert max-w-none text-gray-100 text-lg leading-8 font-sans'
+                    dangerouslySetInnerHTML={{ __html: blogStyleParser(value) }}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
 }
+
+// Add extra spacing between paragraphs
+<style jsx>{`
+  .prose p {
+    margin-bottom: 1.5em;
+  }
+`}</style>
 
 export default OutputSection

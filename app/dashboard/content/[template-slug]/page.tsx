@@ -20,6 +20,8 @@ function CreateNewContent(props:PROPS) {
     const selectedTemplate:TEMPLATE|undefined=Templates?.find((item)=>item.slug==props.params['template-slug']);
     const [loading,setLoading]=useState(false);
     const [aiOutput,setAiOutput]=useState<string>('');
+    const [error, setError] = useState<string | null>(null);
+    const [lastFormData, setLastFormData] = useState<any>(null);
     
     /**
      * Used to generate content from AI
@@ -28,21 +30,36 @@ function CreateNewContent(props:PROPS) {
      */
     const GenerateAIContent=async(formData:any)=>{
         setLoading(true);
+        setError(null);
+        setLastFormData(formData);
         const SelectedPrompt=selectedTemplate?.aiPrompt;
         const FinalAIPrompt=JSON.stringify(formData)+", "+SelectedPrompt;
         
         try {
             const result=await chatSession.sendMessage(FinalAIPrompt);
             setAiOutput(result?.response.text());
+            setError(null);
             
             // Show success message
             console.log('Content generated successfully!');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error generating content:', error);
-            setAiOutput('Sorry, there was an error generating content. Please try again.');
+            // Check for 503 overload error
+            if (error?.message?.includes('503')) {
+                setError('The AI service is currently overloaded. Please try again in a few moments.');
+            } else {
+                setError('Sorry, there was an error generating content. Please try again.');
+            }
+            setAiOutput('');
         }
         
         setLoading(false);
+    }
+
+    const handleRetry = () => {
+        if (lastFormData) {
+            GenerateAIContent(lastFormData);
+        }
     }
 
   return (
@@ -62,6 +79,14 @@ function CreateNewContent(props:PROPS) {
             </div>
             {/* OutputSection  */}
             <div className='lg:col-span-2'>
+                {error && (
+                  <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">
+                    <div>{error}</div>
+                    <Button className="mt-2" onClick={handleRetry} disabled={loading}>
+                      Retry
+                    </Button>
+                  </div>
+                )}
                 <OutputSection aiOutput={aiOutput} />
             </div>
         </div>
