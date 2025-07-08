@@ -46,20 +46,24 @@ function CreateNewContent(props:PROPS) {
     }
 
   return (
-    <div className='p-5'>
+    <div className='p-3 sm:p-4 md:p-5'>
         <Link href={"/dashboard"}>
-            <Button> <ArrowLeft/> Back</Button>
+            <Button className='mb-4 text-sm sm:text-base px-3 py-2 sm:px-4 sm:py-2'> 
+                <ArrowLeft className='w-4 h-4 mr-2'/> Back
+            </Button>
         </Link>
-        <div className='grid grid-cols-1 md:grid-cols-3 gap-5 py-5 '>
+        <div className='grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5 py-3 sm:py-4 md:py-5'>
             {/* FormSection  */}
+            <div className='lg:col-span-1'>
                 <FormSection 
                 selectedTemplate={selectedTemplate}
                 userFormInput={(v:any)=>GenerateAIContent(v)}
                 loading={loading} />
+            </div>
             {/* OutputSection  */}
-            <div className='col-span-2'>
+            <div className='lg:col-span-2'>
                 <OutputSection aiOutput={aiOutput} />
-                </div>
+            </div>
         </div>
     </div>
   )
