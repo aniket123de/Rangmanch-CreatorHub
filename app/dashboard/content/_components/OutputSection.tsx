@@ -85,7 +85,7 @@ function OutputSection({aiOutput}:props) {
               onChange={(val?: string) => setValue(val || '')}
               height={400}
               preview="edit"
-              hideToolbar={false}
+              hideToolbar={true}
               visibleDragbar={false}
               data-color-mode="dark"
               className="!bg-black !border-none"
