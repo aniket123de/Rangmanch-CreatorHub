@@ -54,9 +54,14 @@ function OutputSection({aiOutput}:props) {
   // Function to format plain text content
   const formatPlainText = (text: string): string => {
     return text
+      // Handle multiple bullet points in sequence (• • •)
+      .replace(/\s*•\s*•\s*•/g, '\n•')
+      .replace(/\s*•\s*•/g, '\n•')
       // Handle bullet points marked with asterisk or bullet
       .replace(/\s*\*\s+/g, '\n• ')
-      .replace(/\s*•\s*/g, '\n• ')
+      .replace(/\s*•\s+/g, '\n• ')
+      // Handle bullet points that start content without space after bullet
+      .replace(/•([A-Z][^•]*?)(?=•|$)/g, '\n• $1')
       // Format numbered lists with "d I.", "d II." pattern
       .replace(/\s*d\s+([IVX]+)\.\s*/g, '\n$1. ')
       // Format regular numbered lists
@@ -82,14 +87,143 @@ function OutputSection({aiOutput}:props) {
     if (!text) return '';
     let html = text;
 
-    // Highlight important keywords
-    const importantWords = [
-      'Delhi', 'Paradise', 'Adventure', 'Must-See', 'Unforgettable', 'Unique', 'Experience', 'Tranquility', 'Vibrant', 'Breathtaking', 'Serene', 'Cultural', 'Scenery', 'Houseboats', 'Dal Lake', 'Gardens', 'Cuisine', 'Spiritual', 'Jewel', 'Floating', 'Mountains', 'Valleys', 'Lakes', 'Tulips', 'Spring', 'Winter', 'Snow', 'Warmth', 'Hospitality', 'Heritage', 'Tradition', 'Festival', 'Market', 'Handicraft', 'Shikara', 'Bloom', 'Colors', 'Temple', 'Shrine', 'Mosque', 'Skiing', 'Trekking', 'Paragliding', 'Nature', 'Beauty', 'Peace', 'Heaven', 'Heaven on Earth', 'Red Fort', 'Qutub Minar', 'Humayun', 'India Gate', 'Chandni Chowk', 'Jama Masjid', 'Spice Market', 'Rashtrapati Bhavan', 'Parliament House', 'Connaught Place', 'Lodhi Garden', 'Butter Chicken', 'Biryani', 'Kebabs', 'Street Food'
-    ];
-    importantWords.forEach(word => {
-      const regex = new RegExp(`(\\b${word}\\b)`, 'gi');
-      html = html.replace(regex, '<span class="text-sky-400 font-semibold">$1</span>');
+    // Step 1: Clean up trailing patterns first
+    html = html.replace(/\s*•\s*\*\s*$/gm, '');
+    html = html.replace(/\s*\*\s*$/gm, '');
+    
+    // Remove specific unwanted emojis
+    html = html.replace(/🇮🇳/g, '');
+    
+    // Step 2: Handle asterisk-wrapped content 
+    html = html.replace(/\*([^*]+)\*/g, (match, content) => {
+      if (/^[A-Z]/.test(content.trim()) || content.includes(':')) {
+        return `\n• ${content.trim()}`;
+      }
+      return match;
     });
+
+    // Step 3: Clean up multiple bullets
+    html = html.replace(/•\s*•+/g, '•');
+    html = html.replace(/^\s*•\s*$/gm, '');
+    
+    // Step 4: Fix parenthetical content and remove dots
+    html = html.replace(/\s*\.\s*\(([^)]+)\)/g, ' <span class="text-amber-400 font-medium">($1)</span>');
+    html = html.replace(/\s*•\s*\(([^)]+)\)/g, ' <span class="text-amber-400 font-medium">($1)</span>');
+    html = html.replace(/\(([^)]+)\)/g, '<span class="text-amber-400 font-medium">($1)</span>');
+    
+    // Step 5: COMPREHENSIVE word fixing - one pass only
+    const fixBrokenWords = (str: string): string => {
+      return str
+        // Fix specific common broken words first
+        .replace(/\bIndi\s+a\b/gi, 'India')
+        .replace(/\bDel\s+hi\b/gi, 'Delhi')
+        .replace(/\bcit\s+y\b/gi, 'city')
+        .replace(/\bcities\b/gi, 'cities')
+        .replace(/\btempl?\w*\s+e?s\b/gi, 'temples')
+        .replace(/\bghat\s+s\b/gi, 'ghats')
+        .replace(/\bstreet\s+s\b/gi, 'streets')
+        .replace(/\btradition\s+s\b/gi, 'traditions')
+        .replace(/\bpro\s+s\b/gi, 'pros')
+        .replace(/\bcon\s+s\b/gi, 'cons')
+        .replace(/\bopinion\s+s\b/gi, 'opinions')
+        .replace(/\bthought\s+s\b/gi, 'thoughts')
+        .replace(/\bvlog\s+s\b/gi, 'vlogs')
+        .replace(/\bhistor\s+y\b/gi, 'history')
+        .replace(/\bcultur\s+e\b/gi, 'culture')
+        .replace(/\barchitectur\s+e\b/gi, 'architecture')
+        .replace(/\blandmark\s+s\b/gi, 'landmarks')
+        .replace(/\bmonument\s+s\b/gi, 'monuments')
+        .replace(/\bmuseum\s+s\b/gi, 'museums')
+        .replace(/\bmarket\s+s\b/gi, 'markets')
+        .replace(/\brestaurant\s+s\b/gi, 'restaurants')
+        .replace(/\btempl\s+e\b/gi, 'temple')
+        .replace(/\bpalac\s+e\b/gi, 'palace')
+        .replace(/\bfort\s+s\b/gi, 'forts')
+        .replace(/\bgarden\s+s\b/gi, 'gardens')
+        .replace(/\bpark\s+s\b/gi, 'parks')
+        
+        // Advanced pattern matching for broken words with conditional logic
+        .replace(/\b([a-zA-Z]{2,})\s+([a-z]{1,3})\b/g, (match, firstPart, secondPart) => {
+          // Don't merge if it's clearly two separate words
+          const commonWords = ['a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'to', 'of', 'in', 'on', 'at', 'for', 'by', 'as', 'if', 'or', 'so', 'no', 'up', 'my', 'we', 'me', 'he', 'go', 'do', 'it'];
+          if (commonWords.includes(secondPart.toLowerCase())) return match;
+          
+          // Don't merge if first part ends with vowel and second part starts with vowel (likely separate words)
+          if (/[aeiou]$/i.test(firstPart) && /^[aeiou]/i.test(secondPart)) return match;
+          
+          // Don't merge if it would create a word longer than 15 characters (likely separate words)
+          if (firstPart.length + secondPart.length > 15) return match;
+          
+          // Common suffixes that should be merged
+          const commonSuffixes = ['s', 'es', 'ed', 'ing', 'ly', 'er', 'est', 'al', 'ic', 'ty', 'cy', 'ry', 'ny', 'my'];
+          if (commonSuffixes.includes(secondPart.toLowerCase())) {
+            return firstPart + secondPart;
+          }
+          
+          // Check if merging creates a sensible word (basic heuristics)
+          const merged = firstPart + secondPart;
+          
+          // If merged word has common patterns, it's likely correct
+          if (/tion$|sion$|ment$|ness$|able$|ible$|ical$|ular$/i.test(merged)) {
+            return merged;
+          }
+          
+          // If first part is 4+ chars and second part is 1-2 chars, likely a suffix
+          if (firstPart.length >= 4 && secondPart.length <= 2) {
+            return merged;
+          }
+          
+          // Otherwise keep separate
+          return match;
+        })
+        
+        // Fix broken suffixes with more comprehensive logic
+        .replace(/\b(\w{4,})\s+(s|es|ed|ing|ly|er|est|al|ic|ty|ry|ny)\b/g, (match, word, suffix) => {
+          // Don't merge if word already ends with the suffix
+          if (word.toLowerCase().endsWith(suffix.toLowerCase())) return match;
+          
+          // Don't merge if it would create obvious mistakes
+          if (suffix === 's' && word.endsWith('s')) return match;
+          if (suffix === 'es' && word.endsWith('es')) return match;
+          if (suffix === 'ed' && word.endsWith('ed')) return match;
+          
+          // Special cases for common words
+          if (word.toLowerCase() === 'cit' && suffix === 'y') return 'city';
+          if (word.toLowerCase() === 'histor' && suffix === 'y') return 'history';
+          if (word.toLowerCase() === 'cultur' && suffix === 'e') return 'culture';
+          
+          return word + suffix;
+        })
+        
+        // Fix broken compound words and common patterns
+        .replace(/\b([A-Z][a-z]+)\s+([A-Z][a-z]+)\b/g, (match, first, second) => {
+          // Common compound locations/names that should stay together
+          const compounds = [
+            'Red Fort', 'India Gate', 'Qutub Minar', 'Lotus Temple', 'Jama Masjid',
+            'Chandni Chowk', 'Connaught Place', 'New Delhi', 'Old Delhi'
+          ];
+          
+          const combined = first + ' ' + second;
+          if (compounds.includes(combined)) return combined;
+          
+          // If both parts are short (2-4 chars), might be a broken word
+          if (first.length <= 4 && second.length <= 4) {
+            return first + second.toLowerCase();
+          }
+          
+          return match;
+        })
+        
+        // Clean up excessive spaces but preserve intentional spacing
+        .replace(/\s{3,}/g, ' ')  // Replace 3+ spaces with single space
+        .replace(/([a-zA-Z])\s{2,}([a-zA-Z])/g, '$1 $2')  // Fix double spaces between letters
+        .replace(/\s+([.!?,:;])/g, '$1')  // Remove spaces before punctuation
+        .replace(/([.!?])\s{2,}/g, '$1 ')  // Single space after punctuation
+        .trim();
+    };
+    
+    // Apply word fixing
+    html = fixBrokenWords(html);
 
     // Remove RTF/markdown artifacts
     html = html.replace(/---+/g, ''); // Remove horizontal rules
@@ -102,7 +236,7 @@ function OutputSection({aiOutput}:props) {
     html = html.replace(/\*([A-Za-z0-9 ,\-:'()]+)\)\*/g, '<h2>$1</h2>');
     html = html.replace(/\*([A-Za-z0-9 ,\-:'()]+):\*/g, '<h3>$1</h3>');
     html = html.replace(/\*\*([^*]+)\*\*/g, '<b class="text-pink-400 font-bold">$1</b>');
-    html = html.replace(/\*([^*]+)\*/g, '<i class="text-amber-300">$1</i>');
+    // Don't convert remaining single asterisks to italics if they're part of bullet points
     html = html.replace(/_([^_]+)_/g, '<i class="text-amber-300">$1</i>');
 
     // Handle links [text](url)
@@ -127,25 +261,20 @@ function OutputSection({aiOutput}:props) {
       /^heading \d:?$/i,
       /^heading:?$/i
     ];
-    lines.forEach((line, idx) => {
+    
+    // Additional cleanup before processing lines - simplified
+    const cleanedLines = lines.map(line => {
+      return line
+        .replace(/\s*•\s*\*\s*$/, '') // Remove trailing • *
+        .replace(/\s*\*\s*$/, '') // Remove trailing *
+        .replace(/\s*\.\s*\(([^)]+)\)/g, ' ($1)') // Remove dots before parentheses
+        .replace(/\s+/g, ' ') // Single space normalization
+        .trim();
+    });
+    cleanedLines.forEach((line, idx) => {
       const trimmed = line.trim();
-      // Skip formatting label lines
-      if (formattingLabels.some(re => re.test(trimmed))) return;
-      // Numbered list
-      if (/^\d+\./.test(trimmed)) {
-        if (!inNumList) {
-          result += '<ol class="mb-6 mt-2 list-decimal list-inside">';
-          inNumList = true;
-        }
-        result += `<li>${trimmed.replace(/^\d+\.\s*/, '')}</li>`;
-      } else if (/^[•\-]\s?/.test(trimmed)) {
-        // Bullet list
-        if (!inList) {
-          result += '<ul class="mb-6 mt-2 list-disc list-inside">';
-          inList = true;
-        }
-        result += `<li>${trimmed.replace(/^[•\-]\s?/, '')}</li>`;
-      } else if (trimmed.length === 0) {
+      // Skip formatting label lines and empty lines
+      if (formattingLabels.some(re => re.test(trimmed)) || trimmed.length === 0) {
         // Empty line: close lists if open
         if (inList) {
           result += '</ul>';
@@ -155,6 +284,28 @@ function OutputSection({aiOutput}:props) {
           result += '</ol>';
           inNumList = false;
         }
+        return;
+      }
+      
+      // Numbered list
+      if (/^\d+\./.test(trimmed)) {
+        if (!inNumList) {
+          result += '<ol class="mb-6 mt-2 list-decimal list-inside space-y-2">';
+          inNumList = true;
+        }
+        result += `<li class="text-gray-100">${trimmed.replace(/^\d+\.\s*/, '')}</li>`;
+      } else if (/^[•\-]\s/.test(trimmed)) {
+        // Bullet list - clean formatting like chatbots
+        if (!inList) {
+          result += '<ul class="mb-6 mt-2 list-none space-y-3">';
+          inList = true;
+        }
+        // Clean up the content by removing trailing • * patterns
+        let content = trimmed.replace(/^[•\-]\s/, '');
+        content = content.replace(/\s*•\s*\*\s*$/, ''); // Remove trailing • *
+        content = content.replace(/\s*\*\s*$/, ''); // Remove trailing *
+        
+        result += `<li class="flex items-start gap-3 text-gray-100"><span class="text-blue-400 mt-1">•</span><span>${content}</span></li>`;
       } else if (/<h2>|<h3>/.test(trimmed)) {
         // Heading: close lists if open
         if (inList) {
@@ -176,13 +327,18 @@ function OutputSection({aiOutput}:props) {
           result += '</ol>';
           inNumList = false;
         }
-        result += `<p class="mb-6">${trimmed}</p>`;
+        result += `<p class="mb-6 text-gray-100 leading-relaxed">${trimmed}</p>`;
       }
     });
     if (inList) result += '</ul>';
     if (inNumList) result += '</ol>';
-    // Remove empty <p></p>
-    result = result.replace(/<p class="mb-6">\s*<\/p>/g, '');
+    
+    // Final cleanup - very conservative to avoid breaking emojis
+    result = result
+      .replace(/<p class="mb-6[^"]*">\s*<\/p>/g, '') // Remove empty paragraphs
+      .replace(/\s{2,}/g, ' ') // Normalize spaces but preserve emojis
+      .trim();
+      
     return result;
   };
 
