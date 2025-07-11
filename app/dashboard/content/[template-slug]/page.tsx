@@ -7,7 +7,6 @@ import Templates from '@/app/(data)/Templates'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-import { chatSession } from '@/utils/AiModal'
 
 interface PROPS{
     params:{
@@ -36,21 +35,82 @@ function CreateNewContent(props:PROPS) {
         const FinalAIPrompt=JSON.stringify(formData)+", "+SelectedPrompt;
         
         try {
-            const result=await chatSession.sendMessage(FinalAIPrompt);
-            setAiOutput(result?.response.text());
-            setError(null);
+            // Try RAG-enhanced generation first
+            const response = await fetch('/api/generate-content-rag', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    inputs: {
+                        ...formData,
+                        templatePrompt: SelectedPrompt,
+                        templateType: selectedTemplate?.name || 'Content'
+                    },
+                    enableRAG: true
+                }),
+            });
+
+            const result = await response.json();
             
-            // Show success message
-            console.log('Content generated successfully!');
+            if (result.success && result.content) {
+                setAiOutput(result.content);
+                setError(null);
+                console.log('Content generated successfully!', {
+                    usedRAG: result.metadata?.usedRAG,
+                    contextLength: result.metadata?.contextLength,
+                    fallbackUsed: result.metadata?.fallbackUsed
+                });
+            } else {
+                throw new Error(result.error || 'Failed to generate content');
+            }
         } catch (error: any) {
             console.error('Error generating content:', error);
-            // Check for 503 overload error
-            if (error?.message?.includes('503')) {
-                setError('The AI service is currently overloaded. Please try again in a few moments.');
-            } else {
-                setError('Sorry, there was an error generating content. Please try again.');
+            
+            // Fallback to hybrid API if RAG fails
+            try {
+                console.log('Falling back to hybrid API...');
+                const fallbackResponse = await fetch('/api/generate-content-hybrid', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        prompt: FinalAIPrompt,
+                        temperature: 0.8,
+                        model: 'llama-3.3-70b-versatile',
+                        aiProvider: 'groq'
+                    }),
+                });
+
+                const fallbackResult = await fallbackResponse.json();
+                
+                if (fallbackResult.success && fallbackResult.content) {
+                    setAiOutput(fallbackResult.content);
+                    setError(null);
+                    console.log('Content generated successfully with fallback!');
+                } else {
+                    throw new Error(fallbackResult.error || 'Fallback generation failed');
+                }
+            } catch (fallbackError: any) {
+                console.error('Both generation methods failed:', fallbackError);
+                
+                // Check for specific error types
+                if (error?.message?.includes('503') || error?.message?.includes('overloaded')) {
+                    setError('The AI service is currently overloaded. Please try again in a few moments.');
+                } else if (error?.message?.includes('rate limit')) {
+                    setError('Rate limit exceeded. Please try again in a few moments.');
+                } else if (error?.message?.includes('API key')) {
+                    setError('AI service configuration error. Please check the API key.');
+                } else if (error?.message?.includes('fetch')) {
+                    setError('Network error. Please check your connection and try again.');
+                } else if (error?.message?.includes('Both AI services')) {
+                    setError('Both AI services are currently unavailable. Please try again later.');
+                } else {
+                    setError(error?.message || 'Sorry, there was an error generating content. Please try again.');
+                }
+                setAiOutput('');
             }
-            setAiOutput('');
         }
         
         setLoading(false);

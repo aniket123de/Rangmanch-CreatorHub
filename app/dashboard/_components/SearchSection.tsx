@@ -12,7 +12,7 @@ function SearchSection({onSearchInput}:any) {
   }
 
   return (
-    <div className='relative min-h-[280px] p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-indigo-600 via-purple-600 via-pink-500 to-orange-400 flex flex-col justify-center items-center text-white overflow-hidden'>
+    <div className='relative min-h-[280px] p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 flex flex-col justify-center items-center text-white overflow-hidden'>
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-10 -left-10 w-40 h-40 bg-white/10 rounded-full blur-xl animate-pulse"></div>

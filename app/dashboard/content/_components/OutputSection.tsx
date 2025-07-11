@@ -228,23 +228,36 @@ function OutputSection({aiOutput}:props) {
     // Remove RTF/markdown artifacts
     html = html.replace(/---+/g, ''); // Remove horizontal rules
     html = html.replace(/\\rtf1[\s\S]*?}/g, ''); // Remove RTF header
-    html = html.replace(/\*\(Concluding Paragraph\)\*/gi, '<h2>Concluding Paragraph</h2>');
-    html = html.replace(/\*\(Introductory Paragraph\)\*/gi, '<h2>Introductory Paragraph</h2>');
-    html = html.replace(/\*\(Heading \d+: ([^*)]+)\)\*/g, '<h2>$1</h2>');
-    html = html.replace(/\*Title: ([^*]+)\*/g, '<h2>$1</h2>');
-    html = html.replace(/\*Must-See Historical Landmarks\)\*/gi, '<h2>Must-See Historical Landmarks</h2>');
-    html = html.replace(/\*([A-Za-z0-9 ,\-:'()]+)\)\*/g, '<h2>$1</h2>');
-    html = html.replace(/\*([A-Za-z0-9 ,\-:'()]+):\*/g, '<h3>$1</h3>');
-    html = html.replace(/\*\*([^*]+)\*\*/g, '<b class="text-pink-400 font-bold">$1</b>');
-    // Don't convert remaining single asterisks to italics if they're part of bullet points
-    html = html.replace(/_([^_]+)_/g, '<i class="text-amber-300">$1</i>');
+    
+    // Enhanced formatting for headings and sections with modern styling - EXTRA BOLD AND BIGGER
+    html = html.replace(/\*\(Concluding Paragraph\)\*/gi, '<h2 class="text-6xl font-black text-cyan-400 mb-10 mt-16 bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent border-l-8 border-cyan-400 pl-8 py-6 shadow-2xl tracking-wide">🎯 Concluding Paragraph</h2>');
+    html = html.replace(/\*\(Introductory Paragraph\)\*/gi, '<h2 class="text-6xl font-black text-cyan-400 mb-10 mt-16 bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent border-l-8 border-cyan-400 pl-8 py-6 shadow-2xl tracking-wide">📝 Introductory Paragraph</h2>');
+    html = html.replace(/\*\(Heading \d+: ([^*)]+)\)\*/g, '<h2 class="text-6xl font-black mb-10 mt-16 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent border-l-8 border-purple-400 pl-8 py-6 shadow-2xl tracking-wide">🔥 $1</h2>');
+    html = html.replace(/\*Title: ([^*]+)\*/g, '<h1 class="text-8xl font-black mb-12 mt-10 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent text-center border-b-8 border-yellow-400 pb-8 shadow-2xl tracking-wider">✨ $1</h1>');
+    html = html.replace(/\*Must-See Historical Landmarks\)\*/gi, '<h2 class="text-6xl font-black mb-10 mt-16 bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent border-l-8 border-emerald-400 pl-8 py-6 shadow-2xl tracking-wide">🏛️ Must-See Historical Landmarks</h2>');
+    html = html.replace(/\*([A-Za-z0-9 ,\-:'()]+)\)\*/g, '<h2 class="text-6xl font-black mb-10 mt-16 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent border-l-8 border-purple-400 pl-8 py-6 shadow-2xl tracking-wide">🔥 $1</h2>');
+    html = html.replace(/\*([A-Za-z0-9 ,\-:'()]+):\*/g, '<h3 class="text-4xl font-black mb-8 mt-12 bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent border-l-6 border-green-400 pl-6 py-4 shadow-xl tracking-wide">⚡ $1</h3>');
+    
+    // Modern enhanced bold formatting with gradient backgrounds
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong class="text-yellow-200 font-extrabold bg-gradient-to-r from-yellow-600 to-orange-600 px-3 py-1 rounded-full shadow-lg text-sm">$1</strong>');
+    html = html.replace(/\*([^*\n•]+)\*/g, '<strong class="text-pink-200 font-bold bg-gradient-to-r from-pink-600 to-rose-600 px-2 py-1 rounded shadow">$1</strong>');
+    
+    // Enhanced italic formatting with subtle styling
+    html = html.replace(/_([^_]+)_/g, '<em class="text-amber-300 italic font-medium bg-amber-900/20 px-1 rounded">$1</em>');
+    
+    // Modern format common patterns with improved badges
+    html = html.replace(/\b(Note|Important|Warning|Tips?|Remember):/gi, '<span class="inline-flex items-center gap-1 text-red-200 font-bold bg-gradient-to-r from-red-600 to-red-700 px-3 py-1 rounded-full text-sm shadow-lg">⚠️ $1:</span>');
+    html = html.replace(/\b(Benefits?|Advantages?|Pros?):/gi, '<span class="inline-flex items-center gap-1 text-green-200 font-bold bg-gradient-to-r from-green-600 to-emerald-600 px-3 py-1 rounded-full text-sm shadow-lg">✅ $1:</span>');
+    html = html.replace(/\b(Features?|Highlights?):/gi, '<span class="inline-flex items-center gap-1 text-blue-200 font-bold bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-1 rounded-full text-sm shadow-lg">🌟 $1:</span>');
+    html = html.replace(/\b(Outline?):/gi, '<span class="inline-flex items-center gap-1 text-purple-200 font-bold bg-gradient-to-r from-purple-600 to-violet-600 px-3 py-1 rounded-full text-sm shadow-lg">📝 $1:</span>');
 
-    // Handle links [text](url)
-    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-sky-400 underline" target="_blank">$1</a>');
+    // Modern custom classes for headings with enhanced styling
+    html = html.replace(/<h1>(.*?)<\/h1>/g, '<h1 class="text-4xl font-black mb-8 mt-6 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent text-center border-b-4 border-yellow-400 pb-4 shadow-lg">$1</h1>');
+    html = html.replace(/<h2>(.*?)<\/h2>/g, '<h2 class="text-2xl font-extrabold mb-6 mt-10 bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent border-l-4 border-cyan-400 pl-4 py-2 shadow-md">$1</h2>');
+    html = html.replace(/<h3>(.*?)<\/h3>/g, '<h3 class="text-xl font-bold mb-4 mt-8 bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent border-l-2 border-green-400 pl-3 py-1">$1</h3>');
 
-    // Add custom classes to headings for size, bold, and underline
-    html = html.replace(/<h2>(.*?)<\/h2>/g, '<h2 class="text-2xl font-extrabold underline mb-4 mt-8">$1</h2>');
-    html = html.replace(/<h3>(.*?)<\/h3>/g, '<h3 class="text-xl font-bold underline mb-3 mt-6">$1</h3>');
+    // Enhanced modern link styling with hover effects
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="inline-flex items-center gap-1 text-blue-300 font-semibold bg-blue-900/30 px-2 py-1 rounded hover:bg-blue-800/50 transition-all duration-200 border border-blue-500/30 hover:border-blue-400" target="_blank">🔗 $1</a>');
 
     // Split into lines for further processing
     const lines = html.split(/\r?\n/);
@@ -287,26 +300,41 @@ function OutputSection({aiOutput}:props) {
         return;
       }
       
-      // Numbered list
+      // Enhanced numbered list with modern card-like styling
       if (/^\d+\./.test(trimmed)) {
         if (!inNumList) {
-          result += '<ol class="mb-6 mt-2 list-decimal list-inside space-y-2">';
+          result += '<ol class="mb-8 mt-6 space-y-4 ml-0">';
           inNumList = true;
         }
-        result += `<li class="text-gray-100">${trimmed.replace(/^\d+\.\s*/, '')}</li>`;
-      } else if (/^[•\-]\s/.test(trimmed)) {
-        // Bullet list - clean formatting like chatbots
+        const content = trimmed.replace(/^\d+\.\s*/, '');
+        const numberMatch = trimmed.match(/^\d+/);
+        const number = numberMatch ? numberMatch[0] : '1';
+        result += `<li class="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 font-medium flex items-start gap-4 hover:bg-gray-800/70 transition-colors">
+          <span class="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold rounded-full flex items-center justify-center text-sm shadow-lg">${number}</span>
+          <span class="text-gray-100 leading-relaxed pt-1">${content}</span>
+        </li>`;
+      } else if (/^[•\-*]\s/.test(trimmed)) {
+        // Enhanced bullet list with modern card styling and better icons
         if (!inList) {
-          result += '<ul class="mb-6 mt-2 list-none space-y-3">';
+          result += '<ul class="mb-8 mt-6 space-y-3 ml-0">';
           inList = true;
         }
         // Clean up the content by removing trailing • * patterns
-        let content = trimmed.replace(/^[•\-]\s/, '');
+        let content = trimmed.replace(/^[•\-*]\s/, '');
         content = content.replace(/\s*•\s*\*\s*$/, ''); // Remove trailing • *
         content = content.replace(/\s*\*\s*$/, ''); // Remove trailing *
         
-        result += `<li class="flex items-start gap-3 text-gray-100"><span class="text-blue-400 mt-1">•</span><span>${content}</span></li>`;
-      } else if (/<h2>|<h3>/.test(trimmed)) {
+        // Enhanced content formatting within bullets
+        content = content.replace(/\*\*([^*]+)\*\*/g, '<strong class="text-yellow-200 font-bold bg-yellow-600/20 px-1 rounded">$1</strong>');
+        content = content.replace(/\*([^*]+)\*/g, '<strong class="text-pink-300 font-semibold">$1</strong>');
+        
+        result += `<li class="bg-gray-800/30 border-l-4 border-blue-400/50 rounded-r-lg p-4 flex items-start gap-3 hover:bg-gray-800/50 hover:border-blue-400 transition-all duration-200">
+          <span class="flex-shrink-0 w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mt-0.5">
+            <span class="text-white text-xs font-bold">●</span>
+          </span>
+          <span class="text-gray-100 leading-relaxed font-medium">${content}</span>
+        </li>`;
+      } else if (/<h[1-3]>/.test(trimmed)) {
         // Heading: close lists if open
         if (inList) {
           result += '</ul>';
@@ -318,7 +346,7 @@ function OutputSection({aiOutput}:props) {
         }
         result += trimmed;
       } else {
-        // Paragraph: close lists if open, then wrap in <p>
+        // Paragraph: close lists if open, then wrap in <p> with enhanced formatting
         if (inList) {
           result += '</ul>';
           inList = false;
@@ -327,7 +355,14 @@ function OutputSection({aiOutput}:props) {
           result += '</ol>';
           inNumList = false;
         }
-        result += `<p class="mb-6 text-gray-100 leading-relaxed">${trimmed}</p>`;
+        
+        // Enhanced paragraph formatting with modern styling
+        let enhancedContent = trimmed;
+        enhancedContent = enhancedContent.replace(/\*\*([^*]+)\*\*/g, '<strong class="text-yellow-200 font-bold bg-gradient-to-r from-yellow-600/30 to-orange-600/30 px-2 py-1 rounded shadow">$1</strong>');
+        enhancedContent = enhancedContent.replace(/\*([^*]+)\*/g, '<strong class="text-pink-300 font-semibold bg-pink-600/20 px-1 rounded">$1</strong>');
+        enhancedContent = enhancedContent.replace(/\b([A-Z][A-Za-z\s]*:)/g, '<span class="text-green-300 font-bold bg-green-600/20 px-2 py-1 rounded">$1</span>');
+        
+        result += `<p class="mb-8 text-gray-100 leading-relaxed font-medium text-base bg-gray-800/20 border border-gray-700/30 rounded-lg p-4 shadow-sm hover:bg-gray-800/30 transition-colors">${enhancedContent}</p>`;
       }
     });
     if (inList) result += '</ul>';
