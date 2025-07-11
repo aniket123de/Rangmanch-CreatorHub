@@ -24,7 +24,7 @@ export const AI_CONFIG = {
   // Generation parameters
   GENERATION_PARAMS: {
     temperature: 0.8,
-    maxTokens: 4096,
+    maxTokens: 4095,
     topP: 0.95,
     frequencyPenalty: 0.1,
     presencePenalty: 0.1
